@@ -11,7 +11,7 @@ import { FXAAShader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/s
 // Setup Scene, Camera, and Renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const fixedHeight = 2.5;
+const fixedHeight = 2.3;
 let objToRender = 'eye';
 const loader = new GLTFLoader();
 let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
@@ -59,7 +59,15 @@ controls.dampingFactor = 0.03;
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
-controls.touchPanSpeed = 0.5;
+controls.touchPanSpeed = .3;
+
+// Restrict Zoom
+controls.minDistance = 1; 
+controls.maxDistance = 3; 
+
+// Restrict Rotation
+controls.minPolarAngle = Math.PI / 2; 
+controls.maxPolarAngle = Math.PI / 1.5;
 
 // Clickable Markers
 const markerGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -74,7 +82,7 @@ const markerMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00ff00, transpare
 const marker2 = new THREE.Mesh(markerGeometry2, markerMaterial2);
 marker2.position.set(3.48, 2, -3);
 marker2.name = "ClickableMarker2";
-marker2.rotation.set(0, Math.PI / 4.3, 0); // Rotate 45° around the Y-axis
+marker2.rotation.set(0, Math.PI / 4.3, 0); 
 scene.add(marker2);
 
 // Raycaster for Click Detection
@@ -84,9 +92,9 @@ const mouse = new THREE.Vector2();
 // Camera Movement Functions
 function moveCameraToMarker1() {
     gsap.to(camera.position, {
-        x: marker.position.x - 1,
+        x: marker.position.x - .7,
         y: fixedHeight,
-        z: marker.position.z - 2,
+        z: marker.position.z - 4,
         duration: 1.5,
         ease: "power2.inOut",
         onUpdate: () => {
