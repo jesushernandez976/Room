@@ -78,10 +78,10 @@ marker.position.set(0.01, fixedHeight, 2.77);
 marker.name = "ClickableMarker";
 scene.add(marker);
 
-const markerGeometry2 = new THREE.BoxGeometry(.2, 1, 2);
-const markerMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0 });
+const markerGeometry2 = new THREE.BoxGeometry(.3, 1, 2);
+const markerMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0});
 const marker2 = new THREE.Mesh(markerGeometry2, markerMaterial2);
-marker2.position.set(3.48, 2, -3);
+marker2.position.set(3.6, 2, -3);
 marker2.name = "ClickableMarker2";
 marker2.rotation.set(0, Math.PI / 4.3, 0); 
 scene.add(marker2);
