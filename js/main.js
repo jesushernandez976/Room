@@ -62,10 +62,10 @@ controls.enablePan = true;
 controls.touchPanSpeed = 0.5;
 
 // Clickable Markers
-const markerGeometry = new THREE.BoxGeometry(1, 1, 1);
+const markerGeometry = new THREE.BoxGeometry(2, 2, 2);
 const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0 });
 const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-marker.position.set(0.01, fixedHeight, 2);
+marker.position.set(0.01, fixedHeight, 2.77);
 marker.name = "ClickableMarker";
 scene.add(marker);
 
