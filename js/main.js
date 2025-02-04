@@ -63,11 +63,12 @@ controls.touchPanSpeed = .3;
 
 // Restrict Zoom
 controls.minDistance = 1; 
-controls.maxDistance = 3; 
+controls.maxDistance = 2.7; 
 
 // Restrict Rotation
 controls.minPolarAngle = Math.PI / 2; 
 controls.maxPolarAngle = Math.PI / 1.5;
+
 
 // Clickable Markers
 const markerGeometry = new THREE.BoxGeometry(2, 2, 2);
