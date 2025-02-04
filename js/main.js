@@ -42,29 +42,71 @@ controls.maxDistance = 2;
 controls.enableRotate = true;
 controls.screenSpacePanning = false;
 
+// Create a clickable marker
+const markerGeometry = new THREE.BoxGeometry(1, 1, 1);
+const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0 });
+const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+marker.position.set(0.01, fixedHeight, 2);
+marker.name = "ClickableMarker";
+scene.add(marker);
+
+const markerGeometry2 = new THREE.BoxGeometry(.60, 1, 1);
+const markerMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity:0 });
+const marker2 = new THREE.Mesh(markerGeometry2, markerMaterial2);
+marker2.position.set(3.7, 2, -2.5);
+marker2.name = "ClickableMarker2";
+scene.add(marker2);
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-function moveCamera(targetPosition, lookAtPosition) {
-    targetPosition.x = THREE.MathUtils.clamp(targetPosition.x, roomBounds.minX, roomBounds.maxX);
-    targetPosition.z = THREE.MathUtils.clamp(targetPosition.z, roomBounds.minZ, roomBounds.maxZ);
-    
+function moveCameraToMarker1() {
     gsap.to(camera.position, {
-        x: targetPosition.x,
+        x: marker.position.x - 2,
         y: fixedHeight,
-        z: targetPosition.z,
+        z: marker.position.z - 7,
         duration: 1.5,
         ease: "power2.inOut",
-        onUpdate: controls.update
+        onUpdate: () => {
+            camera.position.y = fixedHeight;
+            controls.update();
+        }
     });
-
     gsap.to(controls.target, {
-        x: lookAtPosition.x,
+        x: marker.position.x,
         y: fixedHeight,
-        z: lookAtPosition.z,
+        z: marker.position.z,
         duration: 1.5,
         ease: "power2.inOut",
-        onUpdate: controls.update
+        onUpdate: () => {
+            controls.target.y = fixedHeight;
+            controls.update();
+        }
+    });
+}
+
+function moveCameraToMarker2() {
+    gsap.to(camera.position, {
+        x: marker2.position.x - 5, 
+        y: fixedHeight + 1, 
+        z: marker2.position.z + 9, 
+        duration: 1.5,
+        ease: "power2.inOut",
+        onUpdate: () => {
+            camera.position.y = fixedHeight + 1; 
+            controls.update();
+        }
+    });
+    gsap.to(controls.target, {
+        x: marker2.position.x,
+        y: fixedHeight,
+        z: marker2.position.z,
+        duration: 1.5,
+        ease: "power2.inOut",
+        onUpdate: () => {
+            controls.target.y = fixedHeight;
+            controls.update();
+        }
     });
 }
 
@@ -73,51 +115,22 @@ window.addEventListener("click", (event) => {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    
     if (intersects.length > 0) {
-        if (!selectedObject) {
-            selectedObject = intersects[0].object;
-            console.log("Object selected: Click again to move.");
-        } else {
-            const objectPosition = selectedObject.getWorldPosition(new THREE.Vector3());
-            moveCamera(new THREE.Vector3(objectPosition.x + 2, fixedHeight, objectPosition.z + 2), objectPosition);
-            selectedObject = null; // Reset selection
+        const clickedObject = intersects[0].object;
+        if (clickedObject.name === "ClickableMarker") {
+            console.log("Marker 1 clicked! Moving camera...");
+            moveCameraToMarker1();
+        } else if (clickedObject.name === "ClickableMarker2") {
+            console.log("Marker 2 clicked! Moving camera...");
+            moveCameraToMarker2();
         }
     }
 });
-
-// Lighting Setup
-const ambientLight = new THREE.AmbientLight(0x00000, 1); // Softer, balanced light
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0x00000, 2.5); // Simulating sunlight
-directionalLight.position.set(-100, -50, 100);
-directionalLight.castShadow = true;
-directionalLight.shadow.mapSize.width = 2;
-directionalLight.shadow.mapSize.height = 2;
-directionalLight.shadow.camera.near = 0.5;
-directionalLight.shadow.camera.far = 100;
-scene.add(directionalLight);
-
-const pointLight = new THREE.PointLight(0xffffff, 1, 0.5); // Warm point light in room
-pointLight.position.set(0, 5, 0);
-pointLight.castShadow = true;
-scene.add(pointLight);
-
-// Enable Shadows
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
 }
-
-window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
 
 animate();
