@@ -110,7 +110,7 @@ function onPointerMove(event) {
 
     intersects.forEach((intersect) => {
         if (intersect.object.name === "Marker1" || intersect.object.name === "Marker2") {
-            gsap.to(intersect.object.material, { opacity: 0.2, duration: 0.3 }); // Show marker on hover
+            gsap.to(intersect.object.material, { opacity: 0.3, duration: 0.3 }); // Show marker on hover
             document.body.style.cursor = "pointer";
             isHovering = true;
         }
