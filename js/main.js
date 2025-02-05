@@ -96,6 +96,8 @@ function moveCamera(marker, offsetX = -0.7, offsetY = 0, offsetZ = -4) {
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+
+
 function onPointerMove(event) {
     const x = event.clientX || event.touches?.[0]?.clientX;
     const y = event.clientY || event.touches?.[0]?.clientY;
@@ -110,7 +112,7 @@ function onPointerMove(event) {
 
     intersects.forEach((intersect) => {
         if (intersect.object.name === "Marker1" || intersect.object.name === "Marker2") {
-            gsap.to(intersect.object.material, { opacity: 0.3, duration: 0.3 }); // Show marker on hover
+            gsap.to(intersect.object.material, { opacity: 0.25, duration: 0.3 }); // Show marker on hover
             document.body.style.cursor = "pointer";
             isHovering = true;
         }
