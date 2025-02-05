@@ -59,42 +59,18 @@ loader.load(`./models/${objToRender}/room.gltf`, (gltf) => {
 // Clickable Markers
 function createMarker(position, size, name, rotation = [0, 0, 0]) {
     const geometry = new THREE.BoxGeometry(...size);
-    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }); // Initially invisible
     const marker = new THREE.Mesh(geometry, material);
     marker.position.set(...position);
     marker.rotation.set(...rotation);
     marker.name = name;
-    
-    // Set cursor to pointer
-    marker.material.cursor = "pointer";
-    
     scene.add(marker);
     return marker;
 }
 
-window.addEventListener("pointermove", onPointerMove);
-
-function onPointerMove(event) {
-    const x = event.clientX || event.touches?.[0]?.clientX;
-    const y = event.clientY || event.touches?.[0]?.clientY;
-
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
-
-    if (intersects.length > 0 && (intersects[0].object.name === "Marker1" || intersects[0].object.name === "Marker2")) {
-        document.body.style.cursor = "pointer";
-    } else {
-        document.body.style.cursor = "default";
-    }
-}
-
-
-
-const marker1 = createMarker([0.01, 2.3, 2.77], [2, 2, 2], "Marker1");
-const marker2 = createMarker([3.6, 2, -3], [0.3, 1, 2], "Marker2", [0, Math.PI / 4.3, 0]);
+// Create markers
+const marker1 = createMarker([-.26, 1.2, 2.3], [1.65, 4, 1], "Marker1");
+const marker2 = createMarker([3.43, 1.94, -2.98], [0.1, 1.01, 1.64], "Marker2", [0, Math.PI / 4.3, 0]);
 
 // Camera Movement Functions
 function moveCamera(marker, offsetX = -0.7, offsetY = 0, offsetZ = -4) {
@@ -116,13 +92,40 @@ function moveCamera(marker, offsetX = -0.7, offsetY = 0, offsetZ = -4) {
     });
 }
 
-// Raycasting Click Detection
+// Raycasting for interaction
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+function onPointerMove(event) {
+    const x = event.clientX || event.touches?.[0]?.clientX;
+    const y = event.clientY || event.touches?.[0]?.clientY;
+
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    let isHovering = false;
+
+    intersects.forEach((intersect) => {
+        if (intersect.object.name === "Marker1" || intersect.object.name === "Marker2") {
+            gsap.to(intersect.object.material, { opacity: 0.2, duration: 0.3 }); // Show marker on hover
+            document.body.style.cursor = "pointer";
+            isHovering = true;
+        }
+    });
+
+    if (!isHovering) {
+        gsap.to(marker1.material, { opacity: 0, duration: 0.3 }); // Hide when not hovered
+        gsap.to(marker2.material, { opacity: 0, duration: 0.3 });
+        document.body.style.cursor = "default";
+    }
+}
+
 function onPointerDown(event) {
-    const x = event.clientX || event.touches[0].clientX;
-    const y = event.clientY || event.touches[0].clientY;
+    const x = event.clientX || event.touches?.[0]?.clientX;
+    const y = event.clientY || event.touches?.[0]?.clientY;
 
     mouse.x = (x / window.innerWidth) * 2 - 1;
     mouse.y = -(y / window.innerHeight) * 2 + 1;
@@ -137,7 +140,8 @@ function onPointerDown(event) {
     }
 }
 
-// Unified Click & Touch Event Listener
+// Event listeners
+window.addEventListener("pointermove", onPointerMove);
 window.addEventListener("pointerdown", onPointerDown);
 
 // FXAA Anti-Aliasing Post-processing
