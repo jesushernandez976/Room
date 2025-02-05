@@ -1,6 +1,6 @@
-// Import the THREE.js library
 import * as THREE from "https://cdn.skypack.dev/three@0.129.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/DRACOLoader.js";
 import { OrbitControls } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/controls/OrbitControls.js";
 import { gsap } from "https://cdn.skypack.dev/gsap@3.9.1";
 import { EffectComposer } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/postprocessing/EffectComposer.js";
@@ -8,176 +8,144 @@ import { RenderPass } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/p
 import { ShaderPass } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/postprocessing/ShaderPass.js";
 import { FXAAShader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/shaders/FXAAShader.js";
 
-// Setup Scene, Camera, and Renderer
+// Scene, Camera, and Renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const fixedHeight = 2.3;
-let objToRender = 'eye';
-const loader = new GLTFLoader();
-let roomBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
-
-const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limits for performance
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.getElementById("container3D").appendChild(renderer.domElement);
 
-// Handle Resizing
-window.addEventListener("resize", () => {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-});
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.enableRotate = true;
+controls.enableZoom = true;
+controls.enablePan = false;
+controls.minDistance = 1;
+controls.maxDistance = 2.7;
+controls.minPolarAngle = Math.PI / 2;
+controls.maxPolarAngle = Math.PI / 1.7;
 
-// Load 3D Model
-loader.load(`./models/${objToRender}/room.gltf`, function (gltf) {
-    console.log("Model Loaded!");
+// Lighting
+scene.add(new THREE.AmbientLight(0x333333, 3.5));
+const topLight = new THREE.DirectionalLight(0xffffff, 1);
+topLight.position.set(50, 50, 5);
+scene.add(topLight);
+
+// Load 3D Model with Draco Compression
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("https://cdn.skypack.dev/three@0.129.0/examples/js/libs/draco/");
+
+const loader = new GLTFLoader();
+loader.setDRACOLoader(dracoLoader);
+
+const objToRender = "eye";
+loader.load(`./models/${objToRender}/room.gltf`, (gltf) => {
     const object = gltf.scene;
     scene.add(object);
 
     const box = new THREE.Box3().setFromObject(object);
     const center = box.getCenter(new THREE.Vector3());
-    roomBounds = { minX: box.min.x + 1, maxX: box.max.x - 1, minZ: box.min.z + 1, maxZ: box.max.z - 1 };
+    const fixedHeight = 2.3;
 
-    camera.position.set(center.x + 6, fixedHeight, center.z + .50);
+    camera.position.set(center.x + 9, fixedHeight, center.z + .5);
     camera.lookAt(center.x, fixedHeight, center.z);
-    controls.target.set(center.x + 4, fixedHeight, center.z);
+    controls.target.set(center.x + 2.5, fixedHeight, center.z);
     controls.update();
-}, undefined, function (error) {
-    console.error("Error loading model:", error);
-});
-
-// Lighting
-const topLight = new THREE.DirectionalLight(0xffffff, 1);
-topLight.position.set(50, 50, 5);
-scene.add(topLight);
-scene.add(new THREE.AmbientLight(0x333333, 3.5));
-
-// Controls
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.03;
-controls.enableZoom = true;
-controls.enableRotate = true;
-controls.enablePan = true;
-controls.touchPanSpeed = .3;
-
-// Restrict Zoom
-controls.minDistance = 1; 
-controls.maxDistance = 2.7; 
-
-// Restrict Rotation
-controls.minPolarAngle = Math.PI / 2; 
-controls.maxPolarAngle = Math.PI / 1.5;
-
+}, undefined, (error) => console.error("Error loading model:", error));
 
 // Clickable Markers
-const markerGeometry = new THREE.BoxGeometry(2, 2, 2);
-const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0 });
-const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-marker.position.set(0.01, fixedHeight, 2.77);
-marker.name = "ClickableMarker";
-scene.add(marker);
-
-const markerGeometry2 = new THREE.BoxGeometry(.3, 1, 2);
-const markerMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0});
-const marker2 = new THREE.Mesh(markerGeometry2, markerMaterial2);
-marker2.position.set(3.6, 2, -3);
-marker2.name = "ClickableMarker2";
-marker2.rotation.set(0, Math.PI / 4.3, 0); 
-scene.add(marker2);
-
-// Raycaster for Click Detection
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-// Camera Movement Functions
-function moveCameraToMarker1() {
-    gsap.to(camera.position, {
-        x: marker.position.x - .7,
-        y: fixedHeight,
-        z: marker.position.z - 4,
-        duration: 1.5,
-        ease: "power2.inOut",
-        onUpdate: () => {
-            camera.position.y = fixedHeight;
-            controls.update();
-        }
-    });
-    gsap.to(controls.target, {
-        x: marker.position.x,
-        y: fixedHeight,
-        z: marker.position.z,
-        duration: 1.5,
-        ease: "power2.inOut",
-        onUpdate: () => {
-            controls.target.y = fixedHeight;
-            controls.update();
-        }
-    });
+function createMarker(position, size, name, rotation = [0, 0, 0]) {
+    const geometry = new THREE.BoxGeometry(...size);
+    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+    const marker = new THREE.Mesh(geometry, material);
+    marker.position.set(...position);
+    marker.rotation.set(...rotation);
+    marker.name = name;
+    
+    // Set cursor to pointer
+    marker.material.cursor = "pointer";
+    
+    scene.add(marker);
+    return marker;
 }
 
-function moveCameraToMarker2() {
-    gsap.to(camera.position, {
-        x: marker2.position.x - 1, 
-        y: fixedHeight + 4, 
-        z: marker2.position.z + 1, 
-        duration: 1.5,
-        ease: "power2.inOut",
-        onUpdate: () => {
-            camera.position.y = fixedHeight + 1; 
-            controls.update();
-        }
-    });
-    gsap.to(controls.target, {
-        x: marker2.position.x,
-        y: fixedHeight,
-        z: marker2.position.z,
-        duration: 1.5,
-        ease: "power2.inOut",
-        onUpdate: () => {
-            controls.target.y = fixedHeight;
-            controls.update();
-        }
-    });
-}
+window.addEventListener("pointermove", onPointerMove);
 
-// Click & Touch Event Listener
-function onClick(event) {
-    const x = event.touches ? event.touches[0].clientX : event.clientX;
-    const y = event.touches ? event.touches[0].clientY : event.clientY;
+function onPointerMove(event) {
+    const x = event.clientX || event.touches?.[0]?.clientX;
+    const y = event.clientY || event.touches?.[0]?.clientY;
 
     mouse.x = (x / window.innerWidth) * 2 - 1;
     mouse.y = -(y / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
-    if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        if (clickedObject.name === "ClickableMarker") {
-            console.log("Marker 1 clicked! Moving camera...");
-            moveCameraToMarker1();
-        } else if (clickedObject.name === "ClickableMarker2") {
-            console.log("Marker 2 clicked! Moving camera...");
-            moveCameraToMarker2();
-        }
+
+    if (intersects.length > 0 && (intersects[0].object.name === "Marker1" || intersects[0].object.name === "Marker2")) {
+        document.body.style.cursor = "pointer";
+    } else {
+        document.body.style.cursor = "default";
     }
 }
 
-// Handle Click & Touch
-window.addEventListener("click", onClick);
-window.addEventListener("touchstart", onClick);
+
+
+const marker1 = createMarker([0.01, 2.3, 2.77], [2, 2, 2], "Marker1");
+const marker2 = createMarker([3.6, 2, -3], [0.3, 1, 2], "Marker2", [0, Math.PI / 4.3, 0]);
+
+// Camera Movement Functions
+function moveCamera(marker, offsetX = -0.7, offsetY = 0, offsetZ = -4) {
+    gsap.to(camera.position, {
+        x: marker.position.x + offsetX,
+        y: 2.3 + offsetY,
+        z: marker.position.z + offsetZ,
+        duration: 1.5,
+        ease: "power2.inOut",
+        onUpdate: () => controls.update()
+    });
+    gsap.to(controls.target, {
+        x: marker.position.x,
+        y: 2.3,
+        z: marker.position.z,
+        duration: 1.5,
+        ease: "power2.inOut",
+        onUpdate: () => controls.update()
+    });
+}
+
+// Raycasting Click Detection
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function onPointerDown(event) {
+    const x = event.clientX || event.touches[0].clientX;
+    const y = event.clientY || event.touches[0].clientY;
+
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) {
+        const clickedObject = intersects[0].object;
+        if (clickedObject.name === "Marker1") moveCamera(marker1);
+        if (clickedObject.name === "Marker2") moveCamera(marker2, -1, 4, 1);
+    }
+}
+
+// Unified Click & Touch Event Listener
+window.addEventListener("pointerdown", onPointerDown);
 
 // FXAA Anti-Aliasing Post-processing
 const composer = new EffectComposer(renderer);
-const renderPass = new RenderPass(scene, camera);
-composer.addPass(renderPass);
+composer.addPass(new RenderPass(scene, camera));
 
 const fxaaPass = new ShaderPass(FXAAShader);
-if (/Mobi|Android/i.test(navigator.userAgent)) {
-    fxaaPass.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
-} else {
-    fxaaPass.uniforms['resolution'].value.set(0.01 / window.innerWidth, 0.01 / window.innerHeight);
-}
+fxaaPass.uniforms["resolution"].value.set(.5 / window.innerWidth, .2 / window.innerHeight);
 composer.addPass(fxaaPass);
 
 // Animation Loop
@@ -187,3 +155,10 @@ function animate() {
     composer.render();
 }
 animate();
+
+// Resize Handling
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
